@@ -1,43 +1,44 @@
-import * as path from 'path';
-import * as lsclient from 'vscode-languageclient/node';
+import * as cp from 'child_process';
+import * as rpc from 'vscode-jsonrpc/node';
+import * as lsp from 'vscode-languageserver-protocol';
 
-export function createClient(
-  id: string,
-  selector: lsclient.DocumentSelector | undefined,
-): lsclient.LanguageClient {
-  // tsserver
-  const serverModule = path.join(
-    __dirname,
-    '..',
-    '..',
-    'node_modules',
-    'typescript',
-    'lib',
-    'tsserver.js',
-  );
-  const serverOptions: lsclient.ServerOptions = {
-    run: { module: serverModule, transport: lsclient.TransportKind.ipc },
-    debug: {
-      module: serverModule,
-      transport: lsclient.TransportKind.ipc,
-      options: { execArgv: ['--nolazy', '--inspect=6014'] },
-    },
-  };
 
-  const clientOptions: lsclient.LanguageClientOptions = {
-    documentSelector: selector,
-    synchronize: {},
-    initializationOptions: {},
-    middleware: {},
-  };
-  (clientOptions as { $testMode?: boolean }).$testMode = true;
 
-  const result = new lsclient.LanguageClient(
-    id,
-    'Language Server',
-    serverOptions,
-    clientOptions,
-  );
-  result.registerProposedFeatures();
-  return result;
+export class LanguageClient {
+  private process: cp.ChildProcess;
+
+  private connection: rpc.MessageConnection;
+
+  constructor(command: string, args: string[]) {
+    this.process = cp.spawn(command, args, {
+      shell: true,
+      stdio: 'pipe',
+    });
+    if (this.process.stdin !== null && this.process.stdout !== null) {
+      this.connection = rpc.createMessageConnection(
+        new rpc.StreamMessageReader(this.process.stdout),
+        new rpc.StreamMessageWriter(this.process.stdin),
+      );
+      this.connection.listen();
+    } else {
+      throw new Error('Failed to create connection');
+    }
+
+  }
+
+  public async initialize(req: lsp.InitializeParams): Promise<lsp.InitializeResult> {
+    return this.connection.sendRequest<lsp.InitializeResult>(
+      lsp.InitializeRequest.type.method,
+      req);
+  }
+
+  public async hover(req: lsp.HoverParams): Promise<lsp.Hover> {
+    return this.connection.sendRequest<lsp.Hover>(
+      lsp.HoverRequest.type.method,
+      req);
+  }
+
+  destroy() {
+    this.process.kill();
+  }
 }
