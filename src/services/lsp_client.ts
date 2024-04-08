@@ -19,23 +19,53 @@ export class LanguageClient {
         new rpc.StreamMessageReader(this.process.stdout),
         new rpc.StreamMessageWriter(this.process.stdin),
       );
+
+
+      // log messages
+
+      this.connection.onNotification((notification) => {
+        console.log('notification', notification);
+      });
+      this.connection.onRequest((request) => {
+        console.log('request', request);
+      });
+      this.connection.onError((error) => {
+        console.error('error', error);
+      });
+
       this.connection.listen();
     } else {
       throw new Error('Failed to create connection');
     }
-
   }
 
-  public async initialize(req: lsp.InitializeParams): Promise<lsp.InitializeResult> {
+  public async initialize(
+    params: lsp.InitializeParams,
+  ): Promise<lsp.InitializeResult> {
     return this.connection.sendRequest<lsp.InitializeResult>(
       lsp.InitializeRequest.type.method,
-      req);
+      params,
+    );
   }
 
-  public async hover(req: lsp.HoverParams): Promise<lsp.Hover> {
+  public async initialized(): Promise<void> {
+    await this.connection.sendNotification(lsp.InitializedNotification.type, {});
+    return new Promise((resolve) => resolve());
+  }
+
+  public async hover(params: lsp.HoverParams): Promise<lsp.Hover> {
     return this.connection.sendRequest<lsp.Hover>(
       lsp.HoverRequest.type.method,
-      req);
+      params,
+    );
+  }
+
+  public async listSymbols(
+    params: lsp.WorkspaceSymbolParams,
+  ): Promise<lsp.SymbolInformation[] | lsp.WorkspaceSymbol[] | null> {
+    return this.connection.sendRequest<
+    lsp.SymbolInformation[] | lsp.WorkspaceSymbol[] | null
+    >(lsp.WorkspaceSymbolRequest.type.method, params);
   }
 
   destroy() {
