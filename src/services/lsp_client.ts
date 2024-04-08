@@ -20,9 +20,7 @@ export class LanguageClient {
         new rpc.StreamMessageWriter(this.process.stdin),
       );
 
-
       // log messages
-
       this.connection.onNotification((notification) => {
         console.log('notification', notification);
       });
@@ -35,7 +33,7 @@ export class LanguageClient {
 
       this.connection.listen();
     } else {
-      throw new Error('Failed to create connection');
+      throw new Error('Failed to create connection to language server');
     }
   }
 
@@ -50,7 +48,6 @@ export class LanguageClient {
 
   public async initialized(): Promise<void> {
     await this.connection.sendNotification(lsp.InitializedNotification.type, {});
-    return new Promise((resolve) => resolve());
   }
 
   public async hover(params: lsp.HoverParams): Promise<lsp.Hover> {
@@ -68,7 +65,10 @@ export class LanguageClient {
     >(lsp.WorkspaceSymbolRequest.type.method, params);
   }
 
-  destroy() {
-    this.process.kill();
+  public async shutdown(): Promise<boolean> {
+    await this.connection.sendRequest(lsp.ShutdownRequest.type.method, {});
+    this.connection.dispose();
+    return this.process.kill();
   }
+
 }
