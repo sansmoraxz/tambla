@@ -1,4 +1,5 @@
 import * as url from 'url';
+import * as fs from 'fs';
 import { LanguageClient } from '../src/services/lsp_client';
 
 function prettyPrint(obj: any): string {
@@ -64,9 +65,24 @@ describe('LSP test typescript current project', () => {
 
   test('ls Document Symbols', async () => {
     const docPath = 'src/services/lsp_client.ts';
+    const contents = fs.readFileSync(docPath, 'utf-8');
+    const uri = url.pathToFileURL(docPath).href;
+    await client.openFile({
+      textDocument: {
+        uri,
+        languageId: 'typescript',
+        version: 1,
+        text: contents,
+      },
+    });
     const lsSymbols = await client.listDocumentSymbols({
       textDocument: {
-        uri: docPath,
+        uri,
+      },
+    });
+    await client.closeFile({
+      textDocument: {
+        uri,
       },
     });
 

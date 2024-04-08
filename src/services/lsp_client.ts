@@ -74,6 +74,20 @@ export class LanguageClient {
     );
   }
 
+  public async openFile(params: lsp.DidOpenTextDocumentParams): Promise<void> {
+    return this.connection.sendNotification(
+      lsp.DidOpenTextDocumentNotification.type,
+      params,
+    );
+  }
+
+  public async closeFile(params: lsp.DidCloseTextDocumentParams): Promise<void> {
+    return this.connection.sendNotification(
+      lsp.DidCloseTextDocumentNotification.type,
+      params,
+    );
+  }
+
   public async shutdown(): Promise<boolean> {
     await this.connection.sendRequest(lsp.ShutdownRequest.type.method, {});
     this.connection.dispose();
