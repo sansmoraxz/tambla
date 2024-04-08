@@ -1,6 +1,10 @@
 import * as url from 'url';
 import { LanguageClient } from '../src/services/lsp_client';
 
+function prettyPrint(obj: any): string {
+  return JSON.stringify(obj, null, 2);
+}
+
 describe('LSP test typescript current project', () => {
   let client: LanguageClient;
 
@@ -13,6 +17,8 @@ describe('LSP test typescript current project', () => {
 
     const rootPath = process.cwd();
 
+    console.log('rootPathUri', url.pathToFileURL(rootPath).href);
+
     // initialize the client
     const initResult = await client.initialize({
       processId: process.pid,
@@ -23,7 +29,19 @@ describe('LSP test typescript current project', () => {
           name: 'tambla',
         },
       ],
-      capabilities: {},
+      capabilities: {
+        textDocument: {
+          documentSymbol: {
+            dynamicRegistration: true,
+            hierarchicalDocumentSymbolSupport: true,
+            symbolKind: {
+              valueSet: [
+                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
+              ],
+            },
+          },
+        },
+      },
       initializationOptions: {
         tsserver: {
           logVerbosity: 'verbose',
@@ -31,17 +49,28 @@ describe('LSP test typescript current project', () => {
       },
       rootUri: null,
     });
-    console.log('initResult', JSON.stringify(initResult));
+    console.log('initResult', prettyPrint(initResult));
     await client.initialized();
     console.log('project initialized');
   });
 
-  test('lsSymbols', async () => {
-    const lsSymbols = await client.listSymbols({
+  test('ls Workspace Symbols', async () => {
+    const lsSymbols = await client.listWorkspaceSymbols({
       query: '',
     });
 
-    console.log('lsSymbols', JSON.stringify(lsSymbols));
+    console.log('lsSymbolsWS', prettyPrint(lsSymbols));
+  });
+
+  test('ls Document Symbols', async () => {
+    const docPath = 'src/services/lsp_client.ts';
+    const lsSymbols = await client.listDocumentSymbols({
+      textDocument: {
+        uri: docPath,
+      },
+    });
+
+    console.log('lsSymbolsDC', prettyPrint(lsSymbols));
   });
 
   // close the language server

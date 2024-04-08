@@ -57,12 +57,21 @@ export class LanguageClient {
     );
   }
 
-  public async listSymbols(
+  public async listWorkspaceSymbols(
     params: lsp.WorkspaceSymbolParams,
   ): Promise<lsp.SymbolInformation[] | lsp.WorkspaceSymbol[] | null> {
     return this.connection.sendRequest<
     lsp.SymbolInformation[] | lsp.WorkspaceSymbol[] | null
     >(lsp.WorkspaceSymbolRequest.type.method, params);
+  }
+
+  public async listDocumentSymbols(
+    params: lsp.DocumentSymbolParams,
+  ): Promise<lsp.DocumentSymbol[] | null> {
+    return this.connection.sendRequest<lsp.DocumentSymbol[] | null>(
+      lsp.DocumentSymbolRequest.type.method,
+      params,
+    );
   }
 
   public async shutdown(): Promise<boolean> {
