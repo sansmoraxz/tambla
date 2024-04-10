@@ -64,6 +64,33 @@ export class LanguageClient {
     );
   }
 
+  public async gotoDefinition(
+    params: lsp.DefinitionParams,
+  ): Promise<lsp.Location | lsp.Location[] | null> {
+    return this.connection.sendRequest<lsp.Location | lsp.Location[] | null>(
+      lsp.DefinitionRequest.type.method,
+      params,
+    );
+  }
+
+  public async gotoImplementation(
+    params: lsp.ImplementationParams,
+  ): Promise<lsp.Location | lsp.Location[] | null> {
+    return this.connection.sendRequest<lsp.Location | lsp.Location[] | null>(
+      lsp.ImplementationRequest.type.method,
+      params,
+    );
+  }
+
+  public async findReferences(
+    params: lsp.ReferenceParams,
+  ): Promise<lsp.Location[] | null> {
+    return this.connection.sendRequest<lsp.Location[] | null>(
+      lsp.ReferencesRequest.type.method,
+      params,
+    );
+  }
+
   public async listWorkspaceSymbols(
     params: lsp.WorkspaceSymbolParams,
   ): Promise<lsp.SymbolInformation[] | lsp.WorkspaceSymbol[] | null> {
@@ -94,6 +121,7 @@ export class LanguageClient {
       params,
     );
   }
+
 
   public async shutdown(): Promise<boolean> {
     await this.connection.sendRequest(lsp.ShutdownRequest.type.method, {});
