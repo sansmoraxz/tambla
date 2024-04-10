@@ -132,7 +132,16 @@ export class LanguageClient {
 
 }
 
-export async function viewContentsAt(params: lsp.Location): Promise<string> {
+export function prettyLocation(location: lsp.Location, withChar: boolean = true): string {
+  const start = location.range.start;
+  const end = location.range.end;
+  if (withChar) {
+    return `${location.uri}:${start.line}:${start.character}-${end.line}:${end.character}`;
+  }
+  return `${location.uri}:${start.line}-${end.line}`;
+}
+
+export async function viewContentsAt(params: lsp.Location, stripChars: boolean = false): Promise<string> {
   const uri = url.fileURLToPath(params.uri);
   const contents = fs.readFileSync(uri, 'utf-8');
   const lines = contents.split('\n');
@@ -140,12 +149,17 @@ export async function viewContentsAt(params: lsp.Location): Promise<string> {
   let strippedContents: string = '';
   for (let i = params.range.start.line; i <= params.range.end.line; i++) {
     if (i === params.range.start.line) {
-      strippedContents += lines[i].slice(params.range.start.character);
+      if (stripChars) {
+        strippedContents += lines[i].slice(params.range.start.character);
+        continue;
+      }
     } else if (i === params.range.end.line) {
-      strippedContents += lines[i].slice(0, params.range.end.character);
-    } else {
-      strippedContents += lines[i];
+      if (stripChars) {
+        strippedContents += lines[i].slice(0, params.range.end.character);
+        break;
+      }
     }
+    strippedContents += lines[i];
   }
   return strippedContents;
 }
