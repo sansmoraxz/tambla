@@ -6,6 +6,33 @@ function prettyPrint(obj: any): string {
   return JSON.stringify(obj, null, 2);
 }
 
+const DEFAULT_TEST_CLIENT_INITIALIZATION_OPTIONS =
+  {
+    hostInfo: 'vscode',
+    plugins: [],
+    preferences: {
+      allowIncompleteCompletions: true,
+      allowRenameOfImportPath: true,
+      allowTextChangesInNewFiles: true,
+      displayPartsForJSDoc: true,
+      generateReturnInDocTemplate: true,
+      includeAutomaticOptionalChainCompletions: true,
+      includeCompletionsForImportStatements: true,
+      includeCompletionsForModuleExports: true,
+      includeCompletionsWithClassMemberSnippets: true,
+      includeCompletionsWithInsertText: true,
+      includeCompletionsWithSnippetText: true,
+      jsxAttributeCompletionStyle: 'auto',
+      providePrefixAndSuffixTextForRename: true,
+    },
+    tsserver: {
+      // With default `auto`, due to dynamic routing, some requests would be routed to syntax server while the project
+      // is loading and return incomplete results so force just a single server for tests.
+      useSyntaxServer: 'never',
+    },
+  };
+
+
 describe('LSP test typescript current project', () => {
   let client: LanguageClient;
 
@@ -33,21 +60,11 @@ describe('LSP test typescript current project', () => {
       capabilities: {
         textDocument: {
           documentSymbol: {
-            dynamicRegistration: true,
             hierarchicalDocumentSymbolSupport: true,
-            symbolKind: {
-              valueSet: [
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-              ],
-            },
           },
         },
       },
-      initializationOptions: {
-        tsserver: {
-          logVerbosity: 'verbose',
-        },
-      },
+      initializationOptions: DEFAULT_TEST_CLIENT_INITIALIZATION_OPTIONS,
       rootUri: null,
     });
     console.log('initResult', prettyPrint(initResult));
@@ -56,6 +73,17 @@ describe('LSP test typescript current project', () => {
   });
 
   test('ls Workspace Symbols', async () => {
+    const docPath = 'src/services/lsp_client.ts';
+    const contents = fs.readFileSync(docPath, 'utf-8');
+    const uri = url.pathToFileURL(docPath).href;
+    await client.openFile({
+      textDocument: {
+        uri,
+        languageId: 'typescript',
+        version: 1,
+        text: contents,
+      },
+    });
     const lsSymbols = await client.listWorkspaceSymbols({
       query: '',
     });
@@ -87,6 +115,37 @@ describe('LSP test typescript current project', () => {
     });
 
     console.log('lsSymbolsDC', prettyPrint(lsSymbols));
+  });
+
+  test('hover', async () => {
+    const docPath = 'src/index.ts';
+    const contents = fs.readFileSync(docPath, 'utf-8');
+    const uri = url.pathToFileURL(docPath).href;
+    console.log('uri', uri);
+    await client.openFile({
+      textDocument: {
+        uri,
+        languageId: 'typescript',
+        version: 1,
+        text: contents,
+      },
+    });
+    const hover = await client.hover({
+      textDocument: {
+        uri,
+      },
+      position: {
+        line: 3,
+        character: 7,
+      },
+    });
+    await client.closeFile({
+      textDocument: {
+        uri,
+      },
+    });
+
+    console.log('hover', prettyPrint(hover));
   });
 
   // close the language server
