@@ -1,6 +1,9 @@
 import * as url from 'url';
 import * as fs from 'fs';
-import { LanguageClient } from '../src/services/lsp_client';
+import {
+  LanguageClient,
+  prettyLocation, viewContentsAt,
+} from '../src/services/lsp_client';
 
 function prettyPrint(obj: any): string {
   return JSON.stringify(obj, null, 2);
@@ -146,7 +149,107 @@ describe('LSP test typescript current project', () => {
     });
 
     console.log('hover', prettyPrint(hover));
+
+    const hoverContent = hover?.contents;
+
+    if (typeof hoverContent === 'string') {
+      console.log('hover content', hoverContent);
+    } else if (Array.isArray(hoverContent)) {
+      hoverContent.forEach((content) => {
+        if (typeof content === 'string') {
+          console.log('hover content', content);
+        } else {
+          console.log('hover content', content.value);
+        }
+      });
+    } else {
+      console.log('hover content', hoverContent.value);
+    }
+
   });
+
+  test('gotoDefinition and view the contents', async () => {
+    const docPath = 'src/index.ts';
+    const contents = fs.readFileSync(docPath, 'utf-8');
+    const uri = url.pathToFileURL(docPath).href;
+    await client.openFile({
+      textDocument: {
+        uri,
+        languageId: 'typescript',
+        version: 1,
+        text: contents,
+      },
+    });
+    const definitions = await client.gotoDefinition({
+      textDocument: {
+        uri,
+      },
+      position: {
+        line: 3,
+        character: 7,
+      },
+    });
+    await client.closeFile({
+      textDocument: {
+        uri,
+      },
+    });
+
+    console.log('definition', prettyPrint(definitions));
+    if (definitions) {
+      if (Array.isArray(definitions)) {
+        definitions.forEach(async (definition) => {
+          const defContent = await viewContentsAt(definition);
+          console.log(`definition contents @ ${prettyLocation(definition)} :-\n`, defContent);
+        });
+      } else {
+        const defContent = await viewContentsAt(definitions);
+        console.log(`definition contents @ ${prettyLocation(definitions)} :-\n`, defContent);
+        console.log('definition contents', defContent);
+      }
+    }
+  });
+
+  test('findReferences', async () => {
+    const docPath = 'src/app.ts';
+    const contents = fs.readFileSync(docPath, 'utf-8');
+    const uri = url.pathToFileURL(docPath).href;
+    await client.openFile({
+      textDocument: {
+        uri,
+        languageId: 'typescript',
+        version: 1,
+        text: contents,
+      },
+    });
+    const references = await client.findReferences({
+      textDocument: {
+        uri,
+      },
+      position: {
+        line: 11,
+        character: 9,
+      },
+      context: {
+        includeDeclaration: true,
+      },
+    });
+    await client.closeFile({
+      textDocument: {
+        uri,
+      },
+    });
+
+    console.log('references', prettyPrint(references));
+
+    if (references) {
+      references.forEach(async (reference) => {
+        const refContent = await viewContentsAt(reference);
+        console.log(`reference contents @ ${prettyLocation(reference)} :-\n`, refContent);
+      });
+    }
+  });
+  
 
   // close the language server
   afterAll(async () => {
