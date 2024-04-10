@@ -1,7 +1,8 @@
 import * as cp from 'child_process';
 import * as rpc from 'vscode-jsonrpc/node';
 import * as lsp from 'vscode-languageserver-protocol';
-
+import * as url from 'url';
+import * as fs from 'fs';
 
 
 export class LanguageClient {
@@ -129,4 +130,22 @@ export class LanguageClient {
     return this.process.kill();
   }
 
+}
+
+export async function viewContentsAt(params: lsp.Location): Promise<string> {
+  const uri = url.fileURLToPath(params.uri);
+  const contents = fs.readFileSync(uri, 'utf-8');
+  const lines = contents.split('\n');
+
+  let strippedContents: string = '';
+  for (let i = params.range.start.line; i <= params.range.end.line; i++) {
+    if (i === params.range.start.line) {
+      strippedContents += lines[i].slice(params.range.start.character);
+    } else if (i === params.range.end.line) {
+      strippedContents += lines[i].slice(0, params.range.end.character);
+    } else {
+      strippedContents += lines[i];
+    }
+  }
+  return strippedContents;
 }
