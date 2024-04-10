@@ -14,7 +14,14 @@ export class LanguageClient {
       shell: true,
       stdio: 'pipe',
     });
-    if (this.process.stdin !== null && this.process.stdout !== null) {
+    // log out the process streams
+    if (this.process.stdin !== null && this.process.stdout !== null && this.process.stderr !== null) {
+      this.process.stdout.on('data', (data) => {
+        console.debug(`server stdout: ${data}`);
+      });
+      this.process.stderr.on('data', (data) => {
+        console.debug(`server stderr: ${data}`);
+      });
       this.connection = rpc.createMessageConnection(
         new rpc.StreamMessageReader(this.process.stdout),
         new rpc.StreamMessageWriter(this.process.stdin),
@@ -22,13 +29,13 @@ export class LanguageClient {
 
       // log messages
       this.connection.onNotification((notification) => {
-        console.log('notification', notification);
+        console.debug('notification', notification);
       });
       this.connection.onRequest((request) => {
-        console.log('request', request);
+        console.debug('request', request);
       });
       this.connection.onError((error) => {
-        console.error('error', error);
+        console.debug('error', error);
       });
 
       this.connection.listen();
