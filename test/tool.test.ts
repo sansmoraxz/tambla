@@ -1,23 +1,29 @@
 import { BaseTool } from '../src/interfaces/Tool';
-class MockTool<T> extends BaseTool<T> {
+class MockTool extends BaseTool {
   constructor() {
     super('MockTool', 'MockTool Description', {
-      'x': {
-        'type': 'number',
-        'description': 'Height of the rectangle',
-        'exampleValue': '1',
+      x: {
+        type: 'number',
+        description: 'Height of the rectangle',
+        exampleValue: '1',
       },
-      'y': {
-        'type': 'number',
-        'description': 'Width of the rectangle',
-        'exampleValue': '1',
+      y: {
+        type: 'number',
+        description: 'Width of the rectangle',
+        exampleValue: '1',
       },
     });
-
   }
 
-  fn<R>(): R {
-    return '' as R;
+  fn(inputs: any): string {
+    if (!inputs) {
+      throw new Error('No inputs provided');
+    }
+    const { x, y } = inputs;
+    if (!x || !y) {
+      throw new Error('Invalid inputs');
+    }
+    return (x * y).toString();
   }
 }
 
@@ -33,4 +39,15 @@ describe('Tool', () => {
     let xmlD = tool.getInputPrompt();
     console.log(xmlD);
   });
+
+  it('should run the tool', () => {
+    const tool = new MockTool();
+    const resultSucc = tool.fn({ x: 2, y: 3 });
+    expect(resultSucc).toBe('6');
+    const resultFail = () => tool.fn({ x: 2 });
+    expect(resultFail).toThrow('Invalid inputs');
+    const resultFail2 = () => tool.fn(undefined);
+    expect(resultFail2).toThrow('No inputs provided');
+  });
+  
 });

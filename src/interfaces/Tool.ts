@@ -7,17 +7,17 @@ export interface ToolInputSchema {
   };
 }
 
-export interface Tool<T> {
+export interface Tool {
   name: string;
   description: string;
   schema: ToolInputSchema;
 
-  fn<R>(inputs: T): R;
+  fn(inputs: any): string;
 
   getInputPrompt(): string;
 }
 
-export abstract class BaseTool<T> implements Tool<T> {
+export abstract class BaseTool implements Tool {
   name: string;
 
   description: string;
@@ -30,7 +30,7 @@ export abstract class BaseTool<T> implements Tool<T> {
     this.schema = schema;
   }
 
-  abstract fn<R>(inputs: T): R;
+  abstract fn(inputs: any): string;
 
   getInputPrompt(): string {
     let xmlD = new XMLBuilder().build({
